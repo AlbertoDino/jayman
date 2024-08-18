@@ -25,8 +25,6 @@ namespace jayman.lib
          return () =>
          {
             listener.CollectionStarted(collection.Name);
-            HttpClientHandler clientHandler = new HttpClientHandler();
-            clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => { return true; };
 
             int fails = 0;
             int succeeded = 0;
@@ -34,30 +32,29 @@ namespace jayman.lib
             var items = collection.Items;
             int count = items.Count();
 
-            using (JaymanHttpClient client = new JaymanHttpClient(clientHandler))
-            {
-               for (int index = 0; index < count; index++)
-               {
-                  var runner = new JaymanItemRunnerDoc(items[index]);
-                  var action = runner.BuildAction(engine, client, variables,
-                      (type, name) =>
-                      {
-                         switch (type)
-                         {
-                            case JaymanExecutionEventType.NextExecution:
-                               items.Clear();
-                               count = 1;
-                               index = 0;
-                               items.Add(collection.Items.FirstOrDefault(r => r["name"].ToString() == name));
-                               break;
-                            default:
-                               break;
-                         }
-                      },
-                      listener);
+            var client = JaymanContainer.JaymanHttpClient;
 
-                  _ = action() == JaymanExecuteResult.Success ? succeeded++ : fails++;
-               }
+            for (int index = 0; index < count; index++)
+            {
+               var runner = new JaymanItemRunnerDoc(items[index]);
+               var action = runner.BuildAction(engine, client, variables,
+                   (type, name) =>
+                   {
+                      switch (type)
+                      {
+                         case JaymanExecutionEventType.NextExecution:
+                            items.Clear();
+                            count = 1;
+                            index = 0;
+                            items.Add(collection.Items.FirstOrDefault(r => r["name"].ToString() == name));
+                            break;
+                         default:
+                            break;
+                      }
+                   },
+                   listener);
+
+               _ = action() == JaymanExecuteResult.Success ? succeeded++ : fails++;
             }
 
             listener.OnUpdateSummary(new JaymanExecutionSummary()

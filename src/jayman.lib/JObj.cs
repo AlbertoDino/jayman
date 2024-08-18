@@ -33,13 +33,13 @@ namespace jayman.lib
 
       public JObj this[int index] { get => new JsonObject(json[index]); }
 
-      public T Value<T>() => this.RunWithExecption( 
+      public T Value<T>() => this.RunWithException( 
                                     () => (T)((JValue)json).Value,
                                     () => default(T));
 
       public bool Exist => json != null;
 
-      public List<JObj> ToList => this.RunWithExecption(
+      public List<JObj> ToList => this.RunWithException(
                                           () => ((IList<dynamic>)JsonConvert.DeserializeObject<IList<dynamic>>(JsonConvert.SerializeObject(json)))
                                                           .Select(d => (JObj)new JsonObject(d))
                                                           .ToList(),
@@ -47,7 +47,7 @@ namespace jayman.lib
 
       public override string ToString() => Value<string>();
 
-      private JObj SafeNavigate(string strKey) => new JsonObject(this.RunWithExecption(() => json[strKey] , () => null ));
+      private JObj SafeNavigate(string strKey) => new JsonObject(this.RunWithException(() => json[strKey] , () => null ));
 
    }
 }

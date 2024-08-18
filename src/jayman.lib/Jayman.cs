@@ -1,4 +1,5 @@
-﻿using jayman.lib.utils;
+﻿using jayman.lib.so;
+using jayman.lib.utils;
 
 namespace jayman.lib
 {
@@ -23,17 +24,20 @@ namespace jayman.lib
    public static class JaymanBuilder
    {
 
-      public static IJayman Create() => new Jayman()
-      {
-         Console = new JaymanConsole(),
-         Variables = new JaymanVariablesSession(),
-         JSEngine = new JaymanJSEngine(),
-         Action = () =>
+      public static IJayman Create<C, V, J>()
+         where C : IJaymanRunnerListener, new()
+         where V : IJaymanVariables, new()
+         where J : IJaymanJSEngine, new() => new Jayman()
          {
-            Console.WriteLine("not enough arguments!");
-            return JaymanExecuteResult.Success;
-         }
-      };
+            Console = new C(),
+            Variables = new V(),
+            JSEngine = new J(),
+            Action = () =>
+            {
+               Console.WriteLine("not enough arguments!");
+               return JaymanExecuteResult.Success;
+            }
+         };
 
       public static IJayman ParseArguments(this IJayman jayman, string[] args)
       {
@@ -76,16 +80,34 @@ namespace jayman.lib
                case "injectEnviroment":
                   jayman.JSEngine.InjectVariable(JSEngineVariableType.Enviroment, arg.Value.Split(':')[0], arg.Value.Split(':')[1]);
                   break;
+
+               case "insecure":
+                  JaymanFeatures.Set(JaymanFeatureType.SSLInsecure, true);
+                  break;
             }
          }
 
          return jayman;
       }
 
+      public static IJayman UseDefaultServices(this IJayman jayman)
+      {
+
+         if (JaymanFeatures.Get(JaymanFeatureType.SSLInsecure))
+         {
+            HttpClientHandler clientHandler = new HttpClientHandler();
+            clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => { return true; };
+            JaymanContainer.JaymanHttpClient = new JaymanHttpClient(clientHandler);
+         }
+         else
+         {
+            JaymanContainer.JaymanHttpClient = new JaymanHttpClient();
+         }
+
+         return jayman;
+      }
+
       public static JaymanExecuteResult Run(this IJayman jayman) => jayman.Action();
-
-
-
 
    }
 }

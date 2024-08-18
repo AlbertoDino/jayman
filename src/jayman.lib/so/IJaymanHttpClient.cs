@@ -1,15 +1,15 @@
 ﻿namespace jayman.lib.so
 {
-   public interface IJaymanHttpClient
+   public interface IJaymanHttpClient : IDisposable
    {
-      IJaymanHttpResponse Send(HttpRequestMessage request);
+      IJaymanHttpResponse Fires(HttpRequestMessage request);
    }
 
    public class JaymanHttpClient : HttpClient, IJaymanHttpClient
    {
       public JaymanHttpClient() { }
       public JaymanHttpClient(HttpClientHandler handler) : base(handler) { }
-      public new IJaymanHttpResponse Send(HttpRequestMessage request) => new JaymanHttpResponse(base.Send(request));
+      public IJaymanHttpResponse Fires(HttpRequestMessage request) => new JaymanHttpResponse(base.Send(request));
 
    }
 }

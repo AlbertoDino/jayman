@@ -62,7 +62,7 @@ namespace jayman.lib
                Stopwatch stopwatch = Stopwatch.StartNew();
                stopwatch.Start();
 
-               var httpResponse = client.Send(httpRequest);
+               var httpResponse = client.Fires(httpRequest);
 
                httpResponse.EnsureSuccessStatusCode();
 
