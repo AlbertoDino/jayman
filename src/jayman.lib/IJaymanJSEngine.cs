@@ -1,9 +1,15 @@
-﻿using jayman.utils;
+﻿using jayman.lib.utils;
 using Microsoft.ClearScript;
 using Microsoft.ClearScript.V8;
 
-namespace jayman
+namespace jayman.lib
 {
+   public enum JSEngineVariableType 
+   { 
+      Globals,
+      Collection,
+      Enviroment
+   }
 
    public interface IJaymanJSEngine
    {
@@ -11,7 +17,9 @@ namespace jayman
 
       public void UpdateVariableStorage(IJaymanVariables updateVariables);
 
-      public void TriggerNextExecutionEvent(Action<JaymanScriptEventTypes, string> callback);
+      public void TriggerNextExecutionEvent(Action<JaymanExecutionEventType, string> callback);
+
+      public void InjectVariable(JSEngineVariableType type, string key, string value);
    }
 
    public class JaymanJSEngine : IJaymanJSEngine, IDisposable
@@ -126,26 +134,28 @@ namespace jayman
          ParseVariableResult(new JsonObject(RunJS("getenviromentVariables();", false)), updateVariables);
       }
 
-      private void ParseVariableResult(JObj result, IJaymanVariables updateVariables)
-      {
-         Dictionary<string, string> keyValuePairs = new Dictionary<string, string>();
-
-         var jvariables = result.ToList;
-
-         for (int i = 0; i < jvariables.Count; i++)
+      private void ParseVariableResult(JObj result, IJaymanVariables updateVariables) => 
+         this.RunIgnoreExceptions(() =>
          {
-            var k = Convert.ToString(jvariables[i]["key"]);
-            var v = Convert.ToString(jvariables[i]["value"]);
-            if (keyValuePairs.ContainsKey(k))
-               keyValuePairs[k] = v;
-            else
-               keyValuePairs.Add(k, v);
-         }
+            Dictionary<string, string> keyValuePairs = new Dictionary<string, string>();
 
-         updateVariables.Update(keyValuePairs);
-      }
+            var jvariables = result.ToList;
 
-      public void TriggerNextExecutionEvent(Action<JaymanScriptEventTypes, string> callback)
+            for (int i = 0; i < jvariables.Count; i++)
+            {
+               var k = Convert.ToString(jvariables[i]["key"]);
+               var v = Convert.ToString(jvariables[i]["value"]);
+               if (keyValuePairs.ContainsKey(k))
+                  keyValuePairs[k] = v;
+               else
+                  keyValuePairs.Add(k, v);
+            }
+
+            updateVariables.Update(keyValuePairs);
+         });
+      
+
+      public void TriggerNextExecutionEvent(Action<JaymanExecutionEventType, string> callback)
       {
          var jsScript = @$"getNextScriptName();";
          dynamic jsResponse = RunJS(jsScript, false);
@@ -154,7 +164,23 @@ namespace jayman
 
          if (!string.IsNullOrEmpty(scriptName) && callback != null)
          {
-            callback(JaymanScriptEventTypes.NextExecution, scriptName);
+            callback(JaymanExecutionEventType.NextExecution, scriptName);
+         }
+      }
+
+      public void InjectVariable(JSEngineVariableType type, string key, string value)
+      {
+         switch (type)
+         {
+            case JSEngineVariableType.Globals:
+               RunJS($"pm.globals.set('{key}','{value}')",true);
+               break;
+            case JSEngineVariableType.Collection:
+               RunJS($"pm.collectionVariables.set('{key}','{value}')", true);
+               break;
+            case JSEngineVariableType.Enviroment:
+               RunJS($"pm.environment.set('{key}','{value}')", true);
+               break;
          }
       }
    }
@@ -163,7 +189,7 @@ namespace jayman
    {
       public static IJaymanJSEngine AddHttpResponse(this IJaymanJSEngine engine, string httpResponse)
       {
-         engine.Safe(() =>
+         engine.RunIgnoreExceptions(() =>
          {
             var js = @$" pm.response.jresp = {httpResponse};";
             engine.RunJS(js, false);

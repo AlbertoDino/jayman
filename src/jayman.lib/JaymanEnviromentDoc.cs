@@ -1,27 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
 
-namespace jayman
+namespace jayman.lib
 {
-
-
    public class JaymanEnviromentDoc
    {
-
       private JObj jDoc;
-
       public void Load(JsonObject content) => jDoc = content;
-
       public string Name => (jDoc["name"]?.ToString() ?? string.Empty);
-
       public IList<JObj> Values => jDoc["values"].ToList;
-
    }
 
    public static class JaymanEnviromentDocFunctions
@@ -34,7 +20,7 @@ namespace jayman
          return env;
       }
 
-      public static JaymanEnviromentDoc UpdateVariableStorage(this JaymanEnviromentDoc env, IJaymanVariables updateVariables)
+      public static JaymanEnviromentDoc UpdateVariables(this JaymanEnviromentDoc env, IJaymanVariables updateVariables)
       {
          Dictionary<string, string> keyValuePairs = new Dictionary<string, string>();
 
