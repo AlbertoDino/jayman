@@ -2,7 +2,7 @@
 {
    public static class Utils
    {
-      public static T RunWithException<T> (this Object obj, Func<T> run, Func<T> exception)
+      public static T RunHandleException<T> (this Object obj, Func<T> run, Func<T> exception)
       {
          try { return run();  } catch { return exception(); }
       }

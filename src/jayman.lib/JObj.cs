@@ -17,6 +17,8 @@ namespace jayman.lib
       bool Exist { get; }
 
       public string ToString();
+
+      dynamic Raw { get; }
    }
 
 
@@ -33,21 +35,25 @@ namespace jayman.lib
 
       public JObj this[int index] { get => new JsonObject(json[index]); }
 
-      public T Value<T>() => this.RunWithException( 
+      public T Value<T>() => this.RunHandleException( 
                                     () => (T)((JValue)json).Value,
                                     () => default(T));
 
       public bool Exist => json != null;
 
-      public List<JObj> ToList => this.RunWithException(
+      public List<JObj> ToList => this.RunHandleException(
                                           () => ((IList<dynamic>)JsonConvert.DeserializeObject<IList<dynamic>>(JsonConvert.SerializeObject(json)))
                                                           .Select(d => (JObj)new JsonObject(d))
                                                           .ToList(),
                                           () => [new JsonObject(json)]);
 
-      public override string ToString() => Value<string>();
+      public dynamic Raw => json;
 
-      private JObj SafeNavigate(string strKey) => new JsonObject(this.RunWithException(() => json[strKey] , () => null ));
+      public override string ToString() => this.RunHandleException(
+                                            () => json != null ? ((JValue)json).Value.ToString() : null,
+                                            () => null);
+
+      private JObj SafeNavigate(string strKey) => new JsonObject(this.RunHandleException(() => json[strKey] , () => null ));
 
    }
 }

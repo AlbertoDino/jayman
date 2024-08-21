@@ -2,7 +2,7 @@
 
 namespace jayman.lib.utils
 {
-   public static class CLArguments
+   public static class CommandLineArguments
    {
       public static Dictionary<string, string> ParseArguments(string[] args)
       {

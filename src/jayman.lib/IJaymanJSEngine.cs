@@ -4,8 +4,8 @@ using Microsoft.ClearScript.V8;
 
 namespace jayman.lib
 {
-   public enum JSEngineVariableType 
-   { 
+   public enum JSEngineVariableType
+   {
       Globals,
       Collection,
       Enviroment
@@ -24,6 +24,11 @@ namespace jayman.lib
 
    public class JaymanJSEngine : IJaymanJSEngine, IDisposable
    {
+      public class JSConsole
+      {
+         public static void log(dynamic e) => Console.WriteLine($"V8Output> {Newtonsoft.Json.JsonConvert.SerializeObject(e)}");
+      }
+
       private V8ScriptEngine engine = new V8ScriptEngine(V8ScriptEngineFlags.EnableDynamicModuleImports);
 
       private delegate object RequireAction(string module);
@@ -33,6 +38,7 @@ namespace jayman.lib
       private void Initialize()
       {
          engine.DocumentSettings.AccessFlags |= DocumentAccessFlags.EnableWebLoading | DocumentAccessFlags.AllowCategoryMismatch;
+         engine.UseReflectionBindFallback = false;
 
          var js = @"
 
@@ -55,7 +61,7 @@ namespace jayman.lib
             function getglobalVariables() {
                 const kvPair = []
                 for (const [ckey, cvalue] of pm.globals.entries()) {
-                    kvPair.push( { key: ckey, value : cvalue   } )
+                    kvPair.push( { key: ckey, value : cvalue } )
                 }
                 return kvPair;
             }  
@@ -63,7 +69,7 @@ namespace jayman.lib
             function getcollectionVariables() {
                 const kvPair = []
                 for (const [ckey, cvalue] of pm.collectionVariables.entries()) {
-                    kvPair.push( { key: ckey, value : cvalue   } )
+                    kvPair.push( { key: ckey, value : cvalue } )
                 }
                 return kvPair;
             } 
@@ -71,7 +77,7 @@ namespace jayman.lib
             function getenviromentVariables() {
                 const kvPair = []
                 for (const [ckey, cvalue] of pm.environment.entries()) {
-                    kvPair.push( { key: ckey, value : cvalue   } )
+                    kvPair.push( { key: ckey, value: cvalue } )
                 }
                 return kvPair;
             }     
@@ -84,11 +90,8 @@ namespace jayman.lib
 
          RunJS(js, false);
 
+         engine.AddHostType("console", typeof(JSConsole));
 
-         engine.AddHostObject("console", new Action<object>((e) =>
-         {
-            Console.WriteLine("V8:" + e);
-         }));
 
          engine.AddHostObject("atob", (RequireAction)((e) =>
          {
@@ -106,9 +109,9 @@ namespace jayman.lib
 
 
          engine.AddHostObject("getfile", (RequireAction)((e) =>
-        {
-           return File.ReadAllText("./v8plugins/moment/moment.js");
-        }));
+         {
+            return File.ReadAllText("./v8plugins/moment/moment.js");
+         }));
 
 
          engine.Execute(@"
@@ -134,7 +137,14 @@ namespace jayman.lib
          ParseVariableResult(new JsonObject(RunJS("getenviromentVariables();", false)), updateVariables);
       }
 
-      private void ParseVariableResult(JObj result, IJaymanVariables updateVariables) => 
+
+      public class jkv
+      {
+         public string key { get; set; }
+         public string value { get; set; }
+      }
+
+      private void ParseVariableResult(JObj result, IJaymanVariables updateVariables) =>
          this.RunIgnoreExceptions(() =>
          {
             Dictionary<string, string> keyValuePairs = new Dictionary<string, string>();
@@ -143,8 +153,21 @@ namespace jayman.lib
 
             for (int i = 0; i < jvariables.Count; i++)
             {
-               var k = Convert.ToString(jvariables[i]["key"]);
-               var v = Convert.ToString(jvariables[i]["value"]);
+               string k = jvariables[i]["key"].ToString();
+               string v = string.Empty;
+
+               string valueType = Utils.RunHandleException(result, () => Convert.ToString(jvariables[i]["value"].Raw.Type), () => string.Empty);
+
+               if (valueType == null)
+                  valueType = string.Empty;
+
+               switch (valueType.ToLower())
+               {
+                  case "date": v = jvariables[i]["value"].Value<DateTime>().ToString("yyyy-MM-ddTHH:mm:ss.fffZ"); break;
+                  default: v = jvariables[i]["value"].ToString(); break;
+               }
+
+
                if (keyValuePairs.ContainsKey(k))
                   keyValuePairs[k] = v;
                else
@@ -153,7 +176,7 @@ namespace jayman.lib
 
             updateVariables.Update(keyValuePairs);
          });
-      
+
 
       public void TriggerNextExecutionEvent(Action<JaymanExecutionEventType, string> callback)
       {
@@ -173,7 +196,7 @@ namespace jayman.lib
          switch (type)
          {
             case JSEngineVariableType.Globals:
-               RunJS($"pm.globals.set('{key}','{value}')",true);
+               RunJS($"pm.globals.set('{key}','{value}')", true);
                break;
             case JSEngineVariableType.Collection:
                RunJS($"pm.collectionVariables.set('{key}','{value}')", true);
