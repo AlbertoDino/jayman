@@ -1,15 +1,16 @@
+
 # Jayman
 
-Jayman is a C# program that executes Postman collections.
-Uses the V8 Clear Script Javascript engine for managing a JS state
+Jayman is a simple C# application that executes Postman collections.
+Uses the V8 Clear Script Javascript engine for processing Javascript collection scripts.
 
 ## Supports
 
 * Postman Enviroment file
 * Postman Collection file
 * Collection , Enviroment and Global variables 
-* JS "prerequest" and "test" scripts 
-* JS Next Execution Call
+* JS "prerequest" and "test" collection scripts 
+* JS Next Execution Call (pm.NextExecution)
 * JS atob and Moment plug ins
 
 ## Help
