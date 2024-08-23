@@ -22,15 +22,14 @@ namespace jayman.lib
       Console.WriteLine("");
       Console.WriteLine("Options:");
       Console.WriteLine("-v, --version output version number ");
-      Console.WriteLine("-h, --help                       displey help menu ");
       Console.WriteLine("-h, --help                       display help menu ");
       Console.WriteLine("");
       Console.WriteLine("--enviroment=<file>              set the enviroment file ");
       Console.WriteLine("--collection=<file>              set the collection file ");
       Console.WriteLine("");
-      Console.WriteLine("--injectCollection=<key>:<value> inject a collection variable in the request engine");
-      Console.WriteLine("--injectEnviroment=<key>:<value> inject a enviroment variable in the request engine ");
-      Console.WriteLine("--injectGlobal=<key>:<value>     inject a global variable in the request engine ");
+      Console.WriteLine("--injectCollection=<key>:<value> inject a collection variable into the request process");
+      Console.WriteLine("--injectEnviroment=<key>:<value> inject a enviroment variable into the request process");
+      Console.WriteLine("--injectGlobal=<key>:<value>     inject a global variable into the request process");
       Console.WriteLine("");
       Console.WriteLine("--insecure                       disable server certificate verification");
     }
